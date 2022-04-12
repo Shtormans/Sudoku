@@ -49,10 +49,11 @@ namespace Sudoku
         {
             if (!CheckNumber(number, x, y))
             {
+                _field[y, x].SetIncorrectNumber(number);
                 return false;
             }
 
-            _field[y, x].SetNumber(number);
+            _field[y, x].SetCorrectNumber(number);
 
             if (_field[y, x].Number != number)
             {
@@ -63,12 +64,12 @@ namespace Sudoku
 
         public void ClearNumber(int x, int y)
         {
-            _field[y, x].ClearNumber();
-
             if (_field[y, x].Number == 0)
             {
                 _cellLeft++;
             }
+
+            _field[y, x].ClearNumber();
         }
 
         private Panel CreatePanel(Point location)
@@ -113,7 +114,59 @@ namespace Sudoku
             }
         }
 
+        private bool TryCreateNumber(int x, int y)
+        {
+            int number = _field[y, x].Number;
+
+            for (number = number + 1; number < 10; number++)
+            {
+                if (TrySetNumber(number, x, y))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void GenerateNumbersRandomly()
+        {
+            for (int i = 0; i < CellCount; i++)
+            {
+                Point point = new Point(i / GridSize.Width, i % GridSize.Width);
+
+                if (!TryCreateNumber(point.X, point.Y))
+                {
+                    _field[point.Y, point.X].ClearNumber();
+
+                    i -= 2;
+                    if (i == -2)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            for (int y = 0; y < GridSize.Height; y++)
+            {
+                for (int x = 0; x < GridSize.Width; x++)
+                {
+
+                    if (_random.Next(0, 2) == 0)
+                    {
+                        _field[y, x].ClearNumber();
+                        continue;
+                    }
+
+                    int number = _field[y, x].Number;
+                    _field[y, x].SetStartNumber(number);
+
+                    _cellLeft--;
+                }
+            }
+        }
+
+        private void GenerateNumbersRandomlyOld()
         {
             for (int y = 0; y < GridSize.Height; y++)
             {
@@ -159,7 +212,7 @@ namespace Sudoku
 
         public void GenerateNumbers()
         {
-            GenerateNumbersManually();   
+            GenerateNumbersRandomly();
         }
 
         private void SetRandoNumber(int x, int y)
@@ -266,7 +319,7 @@ namespace Sudoku
         public readonly Point GlobalLocation;
 
         private Button _body;
-        private int _number;
+        private int _number = 0;
         private Form1 _form;
         private bool _isUsed = false;
 
@@ -305,6 +358,7 @@ namespace Sudoku
         public void ClearNumber()
         {
             _number = 0;
+            _body.BackColor = Color.White;
             _body.Text = "";
         }
 
@@ -314,13 +368,27 @@ namespace Sudoku
             _body.Text = _number.ToString();
         }
 
+        public void SetCorrectNumber(int number)
+        {
+            _body.BackColor = Color.White;
+
+            SetNumber(number);
+        }
+
+        public void SetIncorrectNumber(int number)
+        {
+            _body.BackColor = Color.Red;
+
+            SetNumber(number);
+        }
+
         public void SetStartNumber(int number)
         {
             _body.Enabled = false;
             _body.BackColor = Color.Gray;
 
-            _number = number;
-            _body.Text = _number.ToString();
+            SetNumber(number);
+
             _isUsed = true;
         }
 
